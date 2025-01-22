@@ -1,12 +1,13 @@
 # AllergySub
 
-A web application to help find safe and delicious substitutes for common allergens and ingredients.
+A web application for finding ingredient substitutes based on dietary restrictions and allergies.
 
 ## Features
 - Search for ingredient substitutes
-- Filter by dietary restrictions
-- Save favorite alternatives
+- Filter by dietary restrictions and allergies
 - View detailed preparation instructions
+- Rate and favorite substitutes
+- Updated egg category and substitutes
 
 ## Tech Stack
 - React + Vite
