@@ -62,16 +62,20 @@ async function cleanupEggData() {
   if (otherEggItems.length > 0) {
     console.log('Updating items to eggs category:', otherEggItems.map(item => item.name))
     
-    const { error: updateError } = await supabase
-      .from('ingredients')
-      .update({ category: 'eggs' })
-      .in('id', otherEggItems.map(item => item.id))
+    // Update each item individually
+    for (const item of otherEggItems) {
+      console.log(`Updating ${item.name} (${item.id})...`)
+      const { error: updateError } = await supabase
+        .from('ingredients')
+        .update({ category: 'eggs' })
+        .eq('id', item.id)
 
-    if (updateError) {
-      console.error('Error updating egg items:', updateError)
-      return
+      if (updateError) {
+        console.error(`Error updating ${item.name}:`, updateError)
+      } else {
+        console.log(`Successfully updated ${item.name}`)
+      }
     }
-    console.log(`Successfully updated ${otherEggItems.length} egg items to eggs category`)
   }
 
   // Verify the changes
