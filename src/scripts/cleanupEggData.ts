@@ -54,20 +54,22 @@ async function cleanupEggData() {
   // Update all other egg-related items to the eggs category
   const otherEggItems = eggItems.filter(item => 
     item.id !== mainEgg.id && 
-    !duplicateEggs.some(dup => dup.id === item.id)
+    !duplicateEggs.some(dup => dup.id === item.id) &&
+    item.name !== 'Eggplant'
   )
 
-  for (const item of otherEggItems) {
-    console.log(`Updating ${item.name} (${item.id})...`)
+  // Update all items at once
+  if (otherEggItems.length > 0) {
     const { error: updateError } = await supabase
       .from('ingredients')
       .update({ category: 'eggs' })
-      .eq('id', item.id)
+      .in('id', otherEggItems.map(item => item.id))
 
     if (updateError) {
-      console.error(`Error updating ${item.name}:`, updateError)
+      console.error('Error updating egg items:', updateError)
     } else {
-      console.log(`Successfully updated ${item.name}`)
+      console.log(`Successfully updated ${otherEggItems.length} egg items to eggs category`)
+      console.log('Updated items:', otherEggItems.map(item => item.name).join(', '))
     }
   }
 
