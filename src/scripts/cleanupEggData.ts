@@ -23,43 +23,45 @@ async function cleanupEggData() {
 
   console.log('Found egg items:', eggItems)
 
-  // Keep the first 'Eggs' item in the eggs category as our main ingredient
-  const mainEgg = eggItems.find(item => item.name === 'Eggs' && item.category === 'eggs')
-  
-  if (!mainEgg) {
-    console.error('Main egg ingredient not found')
-    return
-  }
-
-  // Delete duplicate 'Eggs' entries
-  const duplicateEggs = eggItems.filter(item => 
-    item.id !== mainEgg.id && 
+  // First, delete all duplicate 'Eggs' entries in the eggs category
+  const eggsInCategory = eggItems.filter(item => 
     item.name === 'Eggs' && 
     item.category === 'eggs'
   )
 
-  if (duplicateEggs.length > 0) {
+  if (eggsInCategory.length > 1) {
+    // Keep the first one and delete the rest
+    const [mainEgg, ...duplicates] = eggsInCategory
+    console.log('Main egg:', mainEgg)
+    console.log('Duplicates to remove:', duplicates)
+
     const { error: deleteError } = await supabase
       .from('ingredients')
       .delete()
-      .in('id', duplicateEggs.map(egg => egg.id))
+      .in('id', duplicates.map(egg => egg.id))
 
     if (deleteError) {
       console.error('Error deleting duplicate eggs:', deleteError)
       return
     }
-    console.log(`Deleted ${duplicateEggs.length} duplicate egg entries`)
+    console.log(`Deleted ${duplicates.length} duplicate egg entries`)
+  } else if (eggsInCategory.length === 0) {
+    console.error('No main egg ingredient found in eggs category')
+    return
   }
+
+  // Get the main egg ID
+  const mainEgg = eggsInCategory[0]
 
   // Update all other egg-related items to the eggs category
   const otherEggItems = eggItems.filter(item => 
     item.id !== mainEgg.id && 
-    !duplicateEggs.some(dup => dup.id === item.id) &&
     item.name !== 'Eggplant'
   )
 
-  // Update all items at once
   if (otherEggItems.length > 0) {
+    console.log('Updating items to eggs category:', otherEggItems.map(item => item.name))
+    
     const { error: updateError } = await supabase
       .from('ingredients')
       .update({ category: 'eggs' })
@@ -67,13 +69,33 @@ async function cleanupEggData() {
 
     if (updateError) {
       console.error('Error updating egg items:', updateError)
-    } else {
-      console.log(`Successfully updated ${otherEggItems.length} egg items to eggs category`)
-      console.log('Updated items:', otherEggItems.map(item => item.name).join(', '))
+      return
     }
+    console.log(`Successfully updated ${otherEggItems.length} egg items to eggs category`)
   }
 
-  console.log('Successfully cleaned up egg data')
+  // Verify the changes
+  const { data: verifyItems, error: verifyError } = await supabase
+    .from('ingredients')
+    .select('id, name, category')
+    .not('name', 'ilike', '%eggplant%')
+    .or('name.ilike.%egg%,name.ilike.%eggs%')
+
+  if (verifyError) {
+    console.error('Error verifying changes:', verifyError)
+    return
+  }
+
+  const incorrectItems = verifyItems.filter(item => 
+    item.name !== 'Eggplant' && 
+    item.category !== 'eggs'
+  )
+
+  if (incorrectItems.length > 0) {
+    console.error('Some items were not properly updated:', incorrectItems)
+  } else {
+    console.log('All egg items successfully moved to eggs category')
+  }
 }
 
 cleanupEggData().catch(console.error) 
