@@ -1,3 +1,5 @@
+import type { Substitute, Rating } from './substitute';
+
 export type Category = 
   | 'dairy'
   | 'eggs'
@@ -35,30 +37,11 @@ export interface Ingredient {
   id: string;
   name: string;
   category: Category;
+  created_at?: string;
   substitutes: Substitute[];
 }
 
-export interface Substitute {
-  id: string;
-  name: string;
-  usage: string[];
-  notes: string;
-  safeFor: {
-    dietaryRestrictions: DietaryRestriction[];
-  };
-  bestFor: string[];
-  notRecommendedFor: string[];
-  preparationSteps: string[];
-  ratio?: string;
-  ratings: Rating[];
-}
-
-export interface Rating {
-  id: string;
-  rating: number;
-  comment?: string;
-  timestamp: number;
-}
+export { Substitute, Rating };
 
 export interface CSVRow {
   ID: string;
@@ -68,4 +51,12 @@ export interface CSVRow {
   'Substitute Usage': string;
   Notes: string;
   'Safe For': string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  avatar_url?: string;
+  dietary_restrictions?: DietaryRestriction[];
 }

@@ -1,0 +1,34 @@
+{
+  "placeholderUrls": [
+    {
+      "ingredient": "Eggs",
+      "substitute": "Aquafaba",
+      "currentUrl": "https://images.unsplash.com/photo-1612187209234-3e6e0d84f394"
+    },
+    {
+      "ingredient": "Wheat Flour",
+      "substitute": "Coconut Flour",
+      "currentUrl": "https://images.unsplash.com/photo-1612187209234-3e6e0d84f395"
+    },
+    {
+      "ingredient": "Ground Beef/Chicken",
+      "substitute": "Textured Vegetable Protein",
+      "currentUrl": "https://images.unsplash.com/photo-1612187209234-3e6e0d84f396"
+    },
+    {
+      "ingredient": "Ground Beef/Chicken",
+      "substitute": "Tempeh",
+      "currentUrl": "https://images.unsplash.com/photo-1612187209234-3e6e0d84f397"
+    },
+    {
+      "ingredient": "Tree Nuts",
+      "substitute": "Hemp Seeds",
+      "currentUrl": "https://images.unsplash.com/photo-1612187209234-3e6e0d84f398"
+    },
+    {
+      "ingredient": "Tree Nuts",
+      "substitute": "Roasted Chickpeas",
+      "currentUrl": "https://images.unsplash.com/photo-1612187209234-3e6e0d84f399"
+    }
+  ]
+} 

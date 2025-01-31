@@ -83,3 +83,33 @@ FROM (
     -- Add more substitute data here as needed
 ) AS s(ingredient_name, name, usage, notes, safe_for, best_for, not_recommended_for, preparation_steps)
 JOIN ingredient_ids i ON i.name = s.ingredient_name;
+
+-- Create substitutes table
+CREATE TABLE substitutes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  ingredient_id UUID REFERENCES ingredients(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  notes TEXT,
+  usage TEXT[] DEFAULT '{}',
+  best_for TEXT[] DEFAULT '{}',
+  not_recommended_for TEXT[] DEFAULT '{}',
+  safe_for JSONB DEFAULT '{"dietaryRestrictions": []}',
+  quantity_conversion TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS
+ALTER TABLE substitutes ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Enable read access for all users" ON "substitutes"
+AS PERMISSIVE FOR SELECT
+TO public
+USING (true);
+
+-- Create trigger for updated_at
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON substitutes
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_updated_at();

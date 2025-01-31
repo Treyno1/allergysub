@@ -1,6 +1,7 @@
 import React from 'react';
 import { Category } from '../types';
 import { categoryInfo } from '../data/categories';
+import { logComponentInit, logCategorySelection } from '../utils/logging';
 
 interface CategoryFilterProps {
   selectedCategories: Category[];
@@ -8,12 +9,31 @@ interface CategoryFilterProps {
 }
 
 export default function CategoryFilter({ selectedCategories, onCategoryToggle }: CategoryFilterProps) {
+  // Component initialization logging
+  React.useEffect(() => {
+    logComponentInit('CategoryFilter', {
+      initialCategories: selectedCategories,
+      totalCategories: Object.keys(categoryInfo).length
+    });
+  }, []);
+
+  const handleCategoryToggle = (category: Category) => {
+    const isSelected = !selectedCategories.includes(category);
+    logCategorySelection('CategoryFilter', {
+      category,
+      isSelected,
+      totalSelected: selectedCategories.length + (isSelected ? 1 : -1),
+      categoryLabel: categoryInfo[category].label
+    });
+    onCategoryToggle(category);
+  };
+
   return (
     <div className="flex flex-wrap gap-2">
       {Object.entries(categoryInfo).map(([value, { label, icon: Icon }]) => (
         <button
           key={value}
-          onClick={() => onCategoryToggle(value as Category)}
+          onClick={() => handleCategoryToggle(value as Category)}
           className={`
             px-4 py-2 rounded-full text-sm font-medium
             transition-colors duration-200 ease-in-out

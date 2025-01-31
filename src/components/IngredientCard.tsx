@@ -6,6 +6,25 @@ import CommentSection from './CommentSection';
 import RecipeRecommendations from './RecipeRecommendations';
 import { categoryInfo } from '../data/categories';
 import { useRatings } from '../hooks/useRatings';
+import { logComponentInit, logImageFallback, logImageHandling, logDietaryRestrictions, logExpandCollapse, logError } from '../utils/logging';
+
+// Helper function to create a data URL for the placeholder
+const createPlaceholderDataUrl = (category: string): string => {
+  const text = category ? `${category} Alternative` : 'No Image';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#e2e8f0"/>
+    <text x="48" y="48" font-family="Arial" font-size="10" fill="#64748b" text-anchor="middle" dy=".3em">${text}</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
+
+// Helper function to get category-specific placeholder
+const getCategoryPlaceholder = (category: string): { src: string; alt: string } => {
+  return {
+    src: createPlaceholderDataUrl(category),
+    alt: category ? `${category} alternative placeholder` : 'Placeholder image'
+  };
+};
 
 interface IngredientCardProps {
   ingredient: Ingredient;
@@ -22,6 +41,28 @@ export default function IngredientCard({
   const [expandedRecipes, setExpandedRecipes] = useState<{ [key: string]: boolean }>({});
   const CategoryIcon = categoryInfo[ingredient.category]?.icon || null;
   const [key, setKey] = useState(0);
+  const [imageLoadError, setImageLoadError] = useState<{ [key: string]: boolean }>({});
+  const [imageLoading, setImageLoading] = useState<{ [key: string]: boolean }>({});
+
+  // Component initialization logging
+  React.useEffect(() => {
+    logComponentInit('IngredientCard', {
+      ingredientId: ingredient.id,
+      ingredientName: ingredient.name,
+      category: ingredient.category,
+      substituteCount: ingredient.substitutes.length
+    });
+  }, []);
+
+  const formatQuantityConversion = (conversion: string | undefined, substituteName: string, originalName: string) => {
+    if (!conversion || conversion === '1:1 ratio - Use the same amount as the original ingredient') {
+      const measure = ingredient.category === 'beverages' ? 'cup' : 
+                     ingredient.category === 'condiments' ? 'teaspoon' :
+                     ingredient.category === 'grains' ? 'cup' : 'cup';
+      return `1 ${measure} of ${originalName} = 1 ${measure} of ${substituteName}`;
+    }
+    return conversion;
+  };
 
   const toggleRecipeSection = (substituteId: string) => {
     setExpandedRecipes(prev => ({
@@ -53,16 +94,67 @@ export default function IngredientCard({
           {ingredient.substitutes.map((substitute) => {
             const { averageRating, addRating } = useRatings(substitute.id);
             const hasNotes = substitute.notes && substitute.notes !== 'No additional notes available.';
-            const hasQuantityConversion = substitute.quantity_conversion && 
-              substitute.quantity_conversion !== '1:1 ratio - Use the same amount as the original ingredient';
+            const placeholder = getCategoryPlaceholder(ingredient.category);
+            const isImageLoading = imageLoading[substitute.id];
+            const hasImageError = imageLoadError[substitute.id];
             
+            // Log dietary restrictions
+            React.useEffect(() => {
+              if (substitute.safeFor?.dietaryRestrictions) {
+                logDietaryRestrictions('IngredientCard', {
+                  substituteId: substitute.id,
+                  substituteName: substitute.name,
+                  restrictions: substitute.safeFor.dietaryRestrictions
+                });
+              }
+            }, [substitute.id, substitute.safeFor?.dietaryRestrictions]);
+
             return (
               <div key={`${substitute.id}-${key}`} className="border-t pt-4 first:border-t-0 first:pt-0">
-                {/* Substitute Header with Image Placeholder */}
+                {/* Substitute Header with Image */}
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex gap-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="relative w-full h-full">
+                        {isImageLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                        <img 
+                          key={`${substitute.id}-${hasImageError ? 'placeholder' : 'image'}`}
+                          src={hasImageError || !substitute.imageUrl ? placeholder.src : substitute.imageUrl}
+                          alt={substitute.altText || `Image of ${substitute.name}`}
+                          className={`w-full h-full object-cover transition-opacity duration-200 ${
+                            isImageLoading ? 'opacity-0' : 'opacity-100'
+                          }`}
+                          onLoad={() => {
+                            logImageHandling('IngredientCard', 'loaded', {
+                              imageUrl: substitute.imageUrl,
+                              substituteName: substitute.name,
+                              substituteId: substitute.id
+                            });
+                            setImageLoading(prev => ({ ...prev, [substitute.id]: false }));
+                            setImageLoadError(prev => ({ ...prev, [substitute.id]: false }));
+                          }}
+                          onError={() => {
+                            logImageFallback('IngredientCard', substitute.imageUrl, substitute.name, 'error');
+                            setImageLoading(prev => ({ ...prev, [substitute.id]: false }));
+                            setImageLoadError(prev => ({ ...prev, [substitute.id]: true }));
+                          }}
+                          onLoadStart={() => {
+                            logImageHandling('IngredientCard', 'loading', {
+                              imageUrl: substitute.imageUrl,
+                              substituteName: substitute.name,
+                              substituteId: substitute.id
+                            });
+                            if (!hasImageError && substitute.imageUrl) {
+                              setImageLoading(prev => ({ ...prev, [substitute.id]: true }));
+                            }
+                          }}
+                          loading="lazy"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <h4 className="font-medium text-gray-900">{substitute.name}</h4>
@@ -95,20 +187,6 @@ export default function IngredientCard({
                   </div>
                 </div>
 
-                {/* Usage Tags */}
-                {substitute.usage.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {substitute.usage.map((usage, index) => (
-                      <span
-                        key={index}
-                        className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full"
-                      >
-                        {usage}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
                 {/* Dietary Tags */}
                 {substitute.safeFor.dietaryRestrictions.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -125,9 +203,16 @@ export default function IngredientCard({
 
                 {/* Expand/Collapse Button */}
                 <button
-                  onClick={() => setExpandedSubstitute(
-                    expandedSubstitute === substitute.id ? null : substitute.id
-                  )}
+                  onClick={() => {
+                    const newState = expandedSubstitute === substitute.id ? null : substitute.id;
+                    logExpandCollapse('IngredientCard', {
+                      section: 'substitute-details',
+                      isExpanded: newState === substitute.id,
+                      itemId: substitute.id,
+                      itemName: substitute.name
+                    });
+                    setExpandedSubstitute(newState);
+                  }}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
                   {expandedSubstitute === substitute.id ? (
@@ -146,29 +231,27 @@ export default function IngredientCard({
                 {/* Expanded Details */}
                 {expandedSubstitute === substitute.id && (
                   <div className="mt-4 space-y-6">
-                    {/* Notes Section - Only show if meaningful notes exist */}
+                    {/* Tasting Notes Section - Only show if meaningful notes exist */}
                     {hasNotes && (
                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h5 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                           <Info className="w-4 h-4 text-blue-500" />
-                          Notes
+                          Tasting Notes
                         </h5>
                         <p className="text-sm text-gray-600">{substitute.notes}</p>
                       </div>
                     )}
 
-                    {/* Quantity Conversion Section - Only show if specific conversion exists */}
-                    {hasQuantityConversion && (
-                      <div className="bg-blue-100 p-4 rounded-lg border border-blue-200 hover:scale-[1.02] transition-transform">
-                        <h5 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                          <Scale className="w-5 h-5 text-blue-600" />
-                          Quantity Conversion
-                        </h5>
-                        <p className="text-sm font-medium text-blue-800">
-                          {substitute.quantity_conversion}
-                        </p>
-                      </div>
-                    )}
+                    {/* Quantity Conversion Section */}
+                    <div className="bg-blue-100 p-4 rounded-lg border border-blue-200 hover:scale-[1.02] transition-transform">
+                      <h5 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <Scale className="w-5 h-5 text-blue-600" />
+                        Quantity Conversion
+                      </h5>
+                      <p className="text-sm font-medium text-blue-800">
+                        {formatQuantityConversion(substitute.quantity_conversion, substitute.name, ingredient.name)}
+                      </p>
+                    </div>
 
                     {/* Recipe Ideas Section - Collapsible */}
                     <div className="bg-green-50 p-4 rounded-lg border border-green-100">
@@ -189,6 +272,20 @@ export default function IngredientCard({
                       
                       {expandedRecipes[substitute.id] && (
                         <div className="mt-4">
+                          {/* Usage Examples */}
+                          {substitute.usage.length > 0 && (
+                            <div className="mb-4">
+                              <ul className="space-y-2">
+                                {substitute.usage.map((use, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                                    <Check className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
+                                    <span>{use}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
                           {/* Best For */}
                           {substitute.bestFor.length > 0 && (
                             <div className="mb-4">
@@ -218,12 +315,6 @@ export default function IngredientCard({
                               </ul>
                             </div>
                           )}
-
-                          {/* Recipe Recommendations Component */}
-                          <RecipeRecommendations 
-                            substitute={substitute}
-                            ingredientName={ingredient.name}
-                          />
                         </div>
                       )}
                     </div>
