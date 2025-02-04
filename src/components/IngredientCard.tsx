@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Heart, Check, X, ChevronDown, ChevronUp, Scale, BookOpen, Info, Image as ImageIcon } from 'lucide-react';
-import { Ingredient, Substitute } from '../types';
+import { Ingredient, Substitute, DietaryRestriction } from '../types';
 import StarRating from './StarRating';
 import CommentSection from './CommentSection';
 import RecipeRecommendations from './RecipeRecommendations';
 import { categoryInfo } from '../data/categories';
 import { useRatings } from '../hooks/useRatings';
 import { logComponentInit, logImageFallback, logImageHandling, logDietaryRestrictions, logExpandCollapse, logError } from '../utils/logging';
+import { getDietaryIcon } from '../utils/dietaryIcons';
 
 // Helper function to create a data URL for the placeholder
 const createPlaceholderDataUrl = (category: string): string => {
@@ -71,11 +72,42 @@ export default function IngredientCard({
     }));
   };
 
+  const renderDietaryIcons = (substitute: Substitute) => {
+    const dietaryRestrictions = substitute.safeFor.dietaryRestrictions;
+
+    if (!dietaryRestrictions || dietaryRestrictions.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="dietary-icons">
+        {dietaryRestrictions.map((restriction: DietaryRestriction) => {
+          const icon = getDietaryIcon(restriction);
+          const displayText = restriction
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join('-');
+          
+          return (
+            <span
+              key={restriction}
+              className="tooltip-container"
+              aria-label={displayText}
+            >
+              {icon}
+              <span className="tooltip-text">{displayText}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
       <div className="p-6">
         {/* Header Section */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center mb-4">
           <div className="flex items-center gap-3">
             {CategoryIcon && (
               <div className="p-2 bg-blue-50 rounded-lg">
@@ -100,73 +132,33 @@ export default function IngredientCard({
             
             // Log dietary restrictions
             React.useEffect(() => {
-              if (substitute.safeFor?.dietaryRestrictions) {
+              if (substitute.safeFor.dietaryRestrictions) {
                 logDietaryRestrictions('IngredientCard', {
                   substituteId: substitute.id,
                   substituteName: substitute.name,
                   restrictions: substitute.safeFor.dietaryRestrictions
                 });
               }
-            }, [substitute.id, substitute.safeFor?.dietaryRestrictions]);
+            }, [substitute.id, substitute.safeFor.dietaryRestrictions]);
 
             return (
               <div key={`${substitute.id}-${key}`} className="border-t pt-4 first:border-t-0 first:pt-0">
-                {/* Substitute Header with Image */}
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex gap-4">
-                    <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <div className="relative w-full h-full">
-                        {isImageLoading && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
-                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
-                        <img 
-                          key={`${substitute.id}-${hasImageError ? 'placeholder' : 'image'}`}
-                          src={hasImageError || !substitute.imageUrl ? placeholder.src : substitute.imageUrl}
-                          alt={substitute.altText || `Image of ${substitute.name}`}
-                          className={`w-full h-full object-cover transition-opacity duration-200 ${
-                            isImageLoading ? 'opacity-0' : 'opacity-100'
-                          }`}
-                          onLoad={() => {
-                            logImageHandling('IngredientCard', 'loaded', {
-                              imageUrl: substitute.imageUrl,
-                              substituteName: substitute.name,
-                              substituteId: substitute.id
-                            });
-                            setImageLoading(prev => ({ ...prev, [substitute.id]: false }));
-                            setImageLoadError(prev => ({ ...prev, [substitute.id]: false }));
-                          }}
-                          onError={() => {
-                            logImageFallback('IngredientCard', substitute.imageUrl, substitute.name, 'error');
-                            setImageLoading(prev => ({ ...prev, [substitute.id]: false }));
-                            setImageLoadError(prev => ({ ...prev, [substitute.id]: true }));
-                          }}
-                          onLoadStart={() => {
-                            logImageHandling('IngredientCard', 'loading', {
-                              imageUrl: substitute.imageUrl,
-                              substituteName: substitute.name,
-                              substituteId: substitute.id
-                            });
-                            if (!hasImageError && substitute.imageUrl) {
-                              setImageLoading(prev => ({ ...prev, [substitute.id]: true }));
-                            }
-                          }}
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-gray-900">{substitute.name}</h4>
-                      <p className="text-sm text-gray-500">
-                        Alternative for {ingredient.name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
+                {/* Card Header with Title and Actions */}
+                <div className="flex justify-between items-start">
+                  <h4 className="font-medium text-gray-900">{substitute.name}</h4>
+                  <div className="flex items-center gap-3 ml-4">
+                    <StarRating 
+                      rating={averageRating}
+                      onRate={(rating: number) => {
+                        addRating(rating);
+                        setKey(prev => prev + 1);
+                      }}
+                      size="sm"
+                    />
                     <button
                       onClick={() => onFavoriteToggle(ingredient, substitute)}
                       className="text-gray-400 hover:text-red-500 transition-colors"
+                      aria-label={`${isFavorite(ingredient.id, substitute.id) ? 'Remove from' : 'Add to'} favorites`}
                     >
                       <Heart
                         className={`w-5 h-5 ${
@@ -176,30 +168,66 @@ export default function IngredientCard({
                         }`}
                       />
                     </button>
-                    <StarRating 
-                      rating={averageRating}
-                      onRate={(rating) => {
-                        addRating(rating);
-                        setKey(prev => prev + 1);
-                      }}
-                      size="sm"
-                    />
                   </div>
                 </div>
 
-                {/* Dietary Tags */}
-                {substitute.safeFor.dietaryRestrictions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {substitute.safeFor.dietaryRestrictions.map((diet) => (
-                      <span
-                        key={diet}
-                        className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-full"
-                      >
-                        {diet}
-                      </span>
-                    ))}
+                {/* Main Content */}
+                <div className="flex gap-4 mt-3">
+                  {/* Image */}
+                  <div className="w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                    <div className="relative w-full h-full">
+                      {isImageLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+                          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      <img 
+                        key={`${substitute.id}-${hasImageError ? 'placeholder' : 'image'}`}
+                        src={hasImageError || !substitute.imageUrl ? placeholder.src : substitute.imageUrl}
+                        alt={substitute.altText || `Image of ${substitute.name}`}
+                        className={`w-full h-full object-cover transition-opacity duration-200 ${
+                          isImageLoading ? 'opacity-0' : 'opacity-100'
+                        }`}
+                        onLoad={() => {
+                          logImageHandling('IngredientCard', 'loaded', {
+                            imageUrl: substitute.imageUrl,
+                            substituteName: substitute.name,
+                            substituteId: substitute.id
+                          });
+                          setImageLoading(prev => ({ ...prev, [substitute.id]: false }));
+                          setImageLoadError(prev => ({ ...prev, [substitute.id]: false }));
+                        }}
+                        onError={() => {
+                          logImageFallback('IngredientCard', substitute.imageUrl, substitute.name, 'error');
+                          setImageLoading(prev => ({ ...prev, [substitute.id]: false }));
+                          setImageLoadError(prev => ({ ...prev, [substitute.id]: true }));
+                        }}
+                        onLoadStart={() => {
+                          logImageHandling('IngredientCard', 'loading', {
+                            imageUrl: substitute.imageUrl,
+                            substituteName: substitute.name,
+                            substituteId: substitute.id
+                          });
+                          if (!hasImageError && substitute.imageUrl) {
+                            setImageLoading(prev => ({ ...prev, [substitute.id]: true }));
+                          }
+                        }}
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
-                )}
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    {/* Alternative Text and Dietary Icons */}
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">
+                        Alternative for {ingredient.name}
+                      </p>
+                      {renderDietaryIcons(substitute)}
+                    </div>
+                  </div>
+                </div>
 
                 {/* Expand/Collapse Button */}
                 <button

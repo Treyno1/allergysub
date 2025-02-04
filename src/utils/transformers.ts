@@ -1,7 +1,13 @@
-import { SupabaseSubstitute, FrontendSubstitute, Rating, DietaryRestriction } from '../types/substitute';
+import type { SupabaseSubstitute, FrontendSubstitute, Rating } from '../types/substitute';
+import type { DietaryRestriction } from '../types';
+
+const normalizeDietaryRestriction = (value: string): DietaryRestriction => {
+  // Convert to lowercase and ensure hyphenation
+  return value.toLowerCase() as DietaryRestriction;
+};
 
 const isValidDietaryRestriction = (value: string): value is DietaryRestriction => {
-  return [
+  const validRestrictions = [
     'vegan',
     'vegetarian',
     'gluten-free',
@@ -9,7 +15,8 @@ const isValidDietaryRestriction = (value: string): value is DietaryRestriction =
     'nut-free',
     'soy-free',
     'corn-free'
-  ].includes(value.toLowerCase());
+  ];
+  return validRestrictions.includes(value.toLowerCase());
 };
 
 export const transformRating = (rating: any): Rating => {
@@ -41,12 +48,22 @@ export const transformSubstitute = (data: SupabaseSubstitute): FrontendSubstitut
     throw new Error('Invalid data: missing required fields');
   }
 
+  // Transform and normalize dietary restrictions
+  const dietaryRestrictions = (data.safe_for || [])
+    .map(normalizeDietaryRestriction)
+    .filter(isValidDietaryRestriction);
+
+  console.log('Transformed dietary restrictions:', {
+    original: data.safe_for,
+    normalized: dietaryRestrictions,
+    substituteName: data.name
+  });
+
   return {
     imageUrl: data.image_url || '/placeholder.png',
     altText: data.alt_text || `Image of ${data.name}`,
     safeFor: {
-      dietaryRestrictions: (data.safe_for || [])
-        .filter(r => ['vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'nut-free', 'soy-free', 'corn-free'].includes(r))
+      dietaryRestrictions
     },
     bestFor: data.best_for || [],
     notRecommendedFor: data.not_recommended_for || [],

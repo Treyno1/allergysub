@@ -1,3 +1,108 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Card layout styles */
+.ingredient-card {
+  @apply relative overflow-hidden;
+}
+
+/* Tooltip styles */
+.tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  transition: transform 0.15s ease-in-out;
+  padding: 2px;
+}
+
+.tooltip-container:hover {
+  transform: scale(1.15);
+}
+
+/* Dietary icons container */
+.dietary-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Card actions */
+.card-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+/* Tooltip text */
+.tooltip-text {
+  visibility: hidden;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  
+  /* Positioning */
+  position: absolute;
+  z-index: 50;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  
+  /* Animation */
+  opacity: 0;
+  transition: all 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+/* Show tooltip on hover */
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Tooltip arrow */
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .tooltip-container {
+    font-size: 1rem;
+  }
+  
+  .tooltip-text {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+  
+  .card-actions {
+    position: static;
+    margin-top: 0.5rem;
+    justify-content: flex-end;
+  }
+  
+  .dietary-icons {
+    margin-top: 0.5rem;
+  }
+}
