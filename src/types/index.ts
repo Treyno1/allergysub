@@ -60,3 +60,41 @@ export interface User {
   avatar_url?: string;
   dietary_restrictions?: DietaryRestriction[];
 }
+
+export type PendingReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export interface PendingReview {
+  id: string;
+  ingredient_name: string;
+  suggested_substitute: string;
+  category: string;
+  description: string;
+  status: PendingReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecipeIngredient {
+  name: string;
+  quantity?: string;
+  unit?: string;
+  substitute?: string;
+  suggested_substitute?: string;
+  category?: string;
+}
+
+export interface Recipe {
+  id: string;
+  recipe_name: string;
+  instructions: string;
+  ingredients: RecipeIngredient[];
+  substitutes: {
+    ingredient_name: string;
+    substitute_name: string;
+    notes?: string;
+    quantity_conversion?: string;
+  }[];
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
