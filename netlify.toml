@@ -7,9 +7,15 @@
   port = 3000
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+from = "/*"
+to = "/index.html"
+status = 200
+
+[[redirects]]
+from = "https://allergysub.com/*"
+to = "https://www.allergysub.com/:splat"
+status = 301
+force = true
 
 [context.production]
   environment = { NODE_VERSION = "18" }

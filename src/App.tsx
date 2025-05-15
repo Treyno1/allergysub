@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Home, Heart, BookOpen, Settings, Book } from 'lucide-react';
-import { Category } from './types';
+import { Category, Ingredient, DietaryRestriction } from './types';
 import SearchBar from './components/SearchBar';
 import CategorySelector from './components/CategorySelector';
 import IngredientCard from './components/IngredientCard';
@@ -9,6 +9,7 @@ import RecipeSubmission from './components/RecipeSubmission';
 import ReviewRecipes from './components/ReviewRecipes';
 import PublicRecipes from './components/PublicRecipes';
 import AdminAuth from './components/AdminAuth';
+import AllergyFilters from './components/AllergyFilters';
 import { useIngredientFilter } from './hooks/useIngredientFilter';
 import { useFavorites } from './hooks/useFavorites';
 import { useSupabaseData } from './hooks/useSupabaseData';
@@ -23,6 +24,7 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [showAdminButton, setShowAdminButton] = useState(false);
   const { ingredients, loading, error } = useSupabaseData();
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   
   // Check for admin button visibility preference in localStorage
   useEffect(() => {
@@ -102,10 +104,20 @@ function App() {
     setShowPublicRecipes(view === 'recipes');
   };
 
-  // Filter ingredients by selected category
-  const displayedIngredients = selectedCategory
+  // Filter ingredients by selected category and dietary filters
+  const categoryFiltered = selectedCategory
     ? filteredIngredients.filter(i => i.category === selectedCategory)
     : filteredIngredients;
+
+  const displayedIngredients = selectedFilters.length > 0
+    ? categoryFiltered.filter(ingredient =>
+        selectedFilters.every(filter =>
+          ingredient.substitutes.some(sub => 
+            sub.safeFor?.dietaryRestrictions?.includes(filter as DietaryRestriction)
+          )
+        )
+      )
+    : categoryFiltered;
 
   if (error) {
     return (
@@ -201,41 +213,29 @@ function App() {
                 />
               </div>
 
-              {/* Search Section */}
-              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              {/* Allergy Filters */}
+              <AllergyFilters onFilterChange={setSelectedFilters} />
+
+              {/* Search Bar */}
+              <div className="mb-8">
                 <SearchBar
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
                   onClear={() => setSearchQuery('')}
-                  placeholder="Search ingredients, substitutes, or filter by dietary needs..."
+                  placeholder="Search for ingredients..."
                 />
               </div>
 
-              {/* Results Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-gray-500 text-lg mb-2">Loading ingredients...</p>
-                  </div>
-                ) : displayedIngredients.length === 0 ? (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-gray-500 text-lg mb-2">
-                      No alternatives found
-                    </p>
-                    <p className="text-gray-400">
-                      Try searching for different ingredients or uses
-                    </p>
-                  </div>
-                ) : (
-                  displayedIngredients.map((ingredient) => (
-                    <IngredientCard
-                      key={ingredient.id}
-                      ingredient={ingredient}
-                      onFavoriteToggle={toggleFavorite}
-                      isFavorite={isFavorite}
-                    />
-                  ))
-                )}
+              {/* Ingredient Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {displayedIngredients.map((ingredient) => (
+                  <IngredientCard
+                    key={ingredient.id}
+                    ingredient={ingredient}
+                    isFavorite={isFavorite}
+                    onFavoriteToggle={toggleFavorite}
+                  />
+                ))}
               </div>
             </>
           )}
