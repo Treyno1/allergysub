@@ -10,7 +10,7 @@ interface CategorySelectorProps {
 
 const categoryImages: Record<string, string> = {
   'dairy': 'https://images.pexels.com/photos/236010/pexels-photo-236010.jpeg',
-  'eggs': 'https://www.freightwaves.com/uploads/2018/04/Eggsbasket-1.jpg',
+  'eggs': 'https://img.freepik.com/free-photo/row-brown-white-eggs-wooden-plank_23-2147928886.jpg',
   'proteins': 'https://images.pexels.com/photos/9698099/pexels-photo-9698099.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
   'grains': 'https://images.pexels.com/photos/1192053/pexels-photo-1192053.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
   'nuts-seeds': 'https://images.pexels.com/photos/86649/pexels-photo-86649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
