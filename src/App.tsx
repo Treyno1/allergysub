@@ -138,10 +138,10 @@ function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2">
+                <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <Home className="w-6 h-6 text-blue-600" />
                   <h1 className="text-xl font-semibold text-gray-900">AllergySub</h1>
-                </div>
+                </a>
                 <p className="text-sm text-gray-500 mt-1">Find safe and delicious substitutes for common allergens and ingredients</p>
               </div>
               <div className="flex items-center gap-4">
