@@ -104,25 +104,25 @@ export default function IngredientCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      <div className="p-6">
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow h-full">
+      <div className="p-6 sm:p-8">
         {/* Header Section */}
-        <div className="flex items-center mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start mb-6">
+          <div className="flex items-start gap-4 w-full">
             {CategoryIcon && (
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <CategoryIcon className="w-5 h-5 text-blue-600" />
+              <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
+                <CategoryIcon className="w-6 h-6 text-blue-600" />
               </div>
             )}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{ingredient.name}</h3>
-              <span className="text-sm text-gray-500">{categoryInfo[ingredient.category]?.label || 'Other'}</span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-xl font-semibold text-gray-900 whitespace-normal break-words">{ingredient.name}</h3>
+              <span className="text-base text-gray-500 mt-1 block">{categoryInfo[ingredient.category]?.label || 'Other'}</span>
             </div>
           </div>
         </div>
 
         {/* Substitutes List */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {ingredient.substitutes.map((substitute) => {
             const { averageRating, addRating } = useRatings(substitute.id);
             const hasNotes = substitute.notes && substitute.notes !== 'No additional notes available.';
@@ -142,11 +142,11 @@ export default function IngredientCard({
             }, [substitute.id, substitute.safeFor.dietaryRestrictions]);
 
             return (
-              <div key={`${substitute.id}-${key}`} className="border-t pt-4 first:border-t-0 first:pt-0">
+              <div key={`${substitute.id}-${key}`} className="border-t pt-6 first:border-t-0 first:pt-0">
                 {/* Card Header with Title and Actions */}
-                <div className="flex justify-between items-start">
-                  <h4 className="font-medium text-gray-900">{substitute.name}</h4>
-                  <div className="flex items-center gap-3 ml-4">
+                <div className="flex justify-between items-start gap-4">
+                  <h4 className="text-lg font-medium text-gray-900 flex-1 min-w-0 whitespace-normal break-words">{substitute.name}</h4>
+                  <div className="flex items-center gap-4 flex-shrink-0">
                     <StarRating 
                       rating={averageRating}
                       onRate={(rating: number) => {
@@ -157,11 +157,11 @@ export default function IngredientCard({
                     />
                     <button
                       onClick={() => onFavoriteToggle(ingredient, substitute)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                       aria-label={`${isFavorite(ingredient.id, substitute.id) ? 'Remove from' : 'Add to'} favorites`}
                     >
                       <Heart
-                        className={`w-5 h-5 ${
+                        className={`w-6 h-6 ${
                           isFavorite(ingredient.id, substitute.id)
                             ? 'text-red-500 fill-current'
                             : ''
@@ -172,13 +172,13 @@ export default function IngredientCard({
                 </div>
 
                 {/* Main Content */}
-                <div className="flex gap-4 mt-3">
+                <div className="flex gap-6 mt-4">
                   {/* Image */}
-                  <div className="w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                  <div className="w-32 h-32 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                     <div className="relative w-full h-full">
                       {isImageLoading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
-                          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       )}
                       <img 
@@ -220,8 +220,8 @@ export default function IngredientCard({
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     {/* Alternative Text and Dietary Icons */}
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-500">
+                    <div className="space-y-3">
+                      <p className="text-base text-gray-500">
                         Alternative for {ingredient.name}
                       </p>
                       {renderDietaryIcons(substitute)}
